@@ -1,0 +1,7 @@
+.env
+logs/
+ml/saved_models/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
