@@ -1,6 +1,6 @@
 aiohttp==3.9.5
 pandas==2.2.2
-pandas-ta==0.3.14b0
+pandas-ta==0.4.71b0
 numpy==1.26.4
 scikit-learn==1.5.0
 optuna==3.6.1
