@@ -64,9 +64,11 @@ def add_indicators(df: pd.DataFrame, params: dict) -> pd.DataFrame:
     atr_p    = int(params["atr_period"])
 
     if _HAS_PANDAS_TA:
+        # EMA は fast==slow のとき列名が衝突するため常に手動計算
+        df["ema_fast"] = _manual_ema(df["close"], ema_fast)
+        df["ema_slow"] = _manual_ema(df["close"], ema_slow)
+
         df.ta.rsi(length=rsi_p, append=True)
-        df.ta.ema(length=ema_fast, append=True)
-        df.ta.ema(length=ema_slow, append=True)
         df.ta.bbands(length=bb_p, std=bb_std, append=True)
         df.ta.macd(fast=macd_f, slow=macd_s, signal=macd_sig, append=True)
         df.ta.atr(length=atr_p, append=True)
@@ -77,10 +79,6 @@ def add_indicators(df: pd.DataFrame, params: dict) -> pd.DataFrame:
         for col in df.columns:
             if col == f"RSI_{rsi_p}":
                 rename_map[col] = "rsi"
-            elif col == f"EMA_{ema_fast}":
-                rename_map[col] = "ema_fast"
-            elif col == f"EMA_{ema_slow}":
-                rename_map[col] = "ema_slow"
             elif col.startswith(f"BBU_{bb_p}_"):
                 rename_map[col] = "bb_upper"
             elif col.startswith(f"BBM_{bb_p}_"):

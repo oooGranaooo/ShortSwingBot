@@ -108,7 +108,7 @@ def optimize(
         candidate["weight_volume"]       = trial.suggest_float("weight_volume", 0.1, 0.8)
         candidate["weight_mc"]           = trial.suggest_float("weight_mc", 0.1, 0.8)
         candidate["ema_fast"]            = trial.suggest_int("ema_fast", 5, 20)
-        candidate["ema_slow"]            = trial.suggest_int("ema_slow", 15, 50)
+        candidate["ema_slow"]            = trial.suggest_int("ema_slow", candidate["ema_fast"] + 1, 50)
 
         # 重みの合計を 1 に正規化
         w_sum = (candidate["weight_price_change"]
