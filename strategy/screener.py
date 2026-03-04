@@ -54,6 +54,10 @@ async def screen_tokens(
         return []
 
     # --- 2. 基本フィルタリング ---
+    if raw_tokens:
+        logger.info(f"トークンサンプルキー: {list(raw_tokens[0].keys())}")
+        logger.info(f"トークンサンプル: {raw_tokens[0]}")
+
     candidates = []
     for token in raw_tokens:
         mc = token.get("mc") or token.get("realMc") or 0
@@ -61,10 +65,13 @@ async def screen_tokens(
         v24h = token.get("v24hUSD") or 0
 
         if mc < p["min_market_cap"]:
+            logger.debug(f"{token.get('symbol')}: MC {mc} < {p['min_market_cap']} でスキップ")
             continue
         if mc > p["max_market_cap"]:
+            logger.debug(f"{token.get('symbol')}: MC {mc} > {p['max_market_cap']} でスキップ")
             continue
         if change1h < p["min_1h_change"] * 100:  # API は % 表記
+            logger.debug(f"{token.get('symbol')}: 1h変化率 {change1h} < {p['min_1h_change']*100} でスキップ")
             continue
 
         # 上場時刻フィルター
