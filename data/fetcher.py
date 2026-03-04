@@ -51,7 +51,10 @@ async def fetch_token_list(
     }
     try:
         async with session.get(url, headers=_headers(), params=params) as resp:
-            resp.raise_for_status()
+            if resp.status != 200:
+                body = await resp.text()
+                logger.error(f"fetch_token_list error: {resp.status} {body}")
+                return []
             data = await resp.json()
             return data.get("data", {}).get("tokens", [])
     except Exception as e:
