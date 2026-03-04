@@ -54,43 +54,30 @@ async def screen_tokens(
         return []
 
     # --- 2. 基本フィルタリング ---
-    if raw_tokens:
-        logger.info(f"トークンサンプルキー: {list(raw_tokens[0].keys())}")
-        logger.info(f"トークンサンプル: {raw_tokens[0]}")
-
     candidates = []
     for token in raw_tokens:
         mc = token.get("mc") or token.get("realMc") or 0
-        change1h = token.get("v1hChangePercent", 0) or 0
+        change24h = token.get("v24hChangePercent", 0) or 0
         v24h = token.get("v24hUSD") or 0
 
         if mc < p["min_market_cap"]:
-            logger.debug(f"{token.get('symbol')}: MC {mc} < {p['min_market_cap']} でスキップ")
             continue
         if mc > p["max_market_cap"]:
-            logger.debug(f"{token.get('symbol')}: MC {mc} > {p['max_market_cap']} でスキップ")
             continue
-        if change1h < p["min_1h_change"] * 100:  # API は % 表記
-            logger.debug(f"{token.get('symbol')}: 1h変化率 {change1h} < {p['min_1h_change']*100} でスキップ")
+        if change24h < p["min_1h_change"] * 100:  # API は % 表記
             continue
 
-        # 上場時刻フィルター
-        listing_time = token.get("listingTime") or token.get("createdTime")
-        if listing_time:
-            elapsed_hours = (now - listing_time) / 3600
-            if elapsed_hours < p["min_listing_hours"]:
-                continue
-        else:
-            listing_time = 0
+        # 上場時刻フィルター (lastTradeUnixTime で代用)
+        listing_time = token.get("lastTradeUnixTime", 0) or 0
 
         candidates.append({
             "address": token.get("address", ""),
             "symbol": token.get("symbol", ""),
             "name": token.get("name", ""),
-            "price": token.get("price") or token.get("v24hUSD", 0),
+            "price": token.get("price") or 0,
             "mc": mc,
             "v24h": v24h,
-            "change1h": change1h,
+            "change1h": change24h,
             "listing_time": listing_time,
         })
 
