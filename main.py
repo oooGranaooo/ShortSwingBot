@@ -104,17 +104,17 @@ async def _main_cycle(
     for token in candidates:
         addr = token["address"]
         items = await fetch_ohlcv(session, addr, TIMEFRAME)
-        df = to_dataframe(items)
-        if df.empty:
+        raw_df = to_dataframe(items)
+        if raw_df.empty:
             continue
-        df = add_indicators(df, params)
+        df = add_indicators(raw_df, params)
         ind = latest(df)
         if ind is None:
             continue
         token_data[addr] = {"token": token, "df": df, "ind": ind}
 
-        # Optuna 用の OHLCV をキャッシュ
-        ohlcv_history[addr] = df
+        # Optuna 用に生の OHLCV をキャッシュ（指標なし）
+        ohlcv_history[addr] = raw_df
 
     if not token_data:
         logger.info("有効な指標データなし。スキップ。")
