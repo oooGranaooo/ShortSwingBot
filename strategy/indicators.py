@@ -72,18 +72,37 @@ def add_indicators(df: pd.DataFrame, params: dict) -> pd.DataFrame:
         df.ta.atr(length=atr_p, append=True)
 
         # カラム名を統一する
-        df.rename(columns={
-            f"RSI_{rsi_p}":                       "rsi",
-            f"EMA_{ema_fast}":                    "ema_fast",
-            f"EMA_{ema_slow}":                    "ema_slow",
-            f"BBU_{bb_p}_{bb_std}":               "bb_upper",
-            f"BBM_{bb_p}_{bb_std}":               "bb_mid",
-            f"BBL_{bb_p}_{bb_std}":               "bb_lower",
-            f"MACD_{macd_f}_{macd_s}_{macd_sig}": "macd",
-            f"MACDs_{macd_f}_{macd_s}_{macd_sig}":"macd_signal",
-            f"MACDh_{macd_f}_{macd_s}_{macd_sig}":"macd_hist",
-            f"ATRr_{atr_p}":                      "atr",
-        }, inplace=True)
+        # BBands はバージョンによって小数点フォーマットが異なるためプレフィックス検索
+        rename_map: dict[str, str] = {}
+        for col in df.columns:
+            if col == f"RSI_{rsi_p}":
+                rename_map[col] = "rsi"
+            elif col == f"EMA_{ema_fast}":
+                rename_map[col] = "ema_fast"
+            elif col == f"EMA_{ema_slow}":
+                rename_map[col] = "ema_slow"
+            elif col.startswith(f"BBU_{bb_p}_"):
+                rename_map[col] = "bb_upper"
+            elif col.startswith(f"BBM_{bb_p}_"):
+                rename_map[col] = "bb_mid"
+            elif col.startswith(f"BBL_{bb_p}_"):
+                rename_map[col] = "bb_lower"
+            elif col == f"MACD_{macd_f}_{macd_s}_{macd_sig}":
+                rename_map[col] = "macd"
+            elif col == f"MACDs_{macd_f}_{macd_s}_{macd_sig}":
+                rename_map[col] = "macd_signal"
+            elif col == f"MACDh_{macd_f}_{macd_s}_{macd_sig}":
+                rename_map[col] = "macd_hist"
+            elif col == f"ATRr_{atr_p}":
+                rename_map[col] = "atr"
+        df.rename(columns=rename_map, inplace=True)
+
+        # pandas-ta が BBands の生成に失敗した場合は手動計算にフォールバック
+        if "bb_lower" not in df.columns:
+            rolling = df["close"].rolling(bb_p)
+            df["bb_mid"]   = rolling.mean()
+            df["bb_upper"] = df["bb_mid"] + bb_std * rolling.std(ddof=0)
+            df["bb_lower"] = df["bb_mid"] - bb_std * rolling.std(ddof=0)
     else:
         df["rsi"]        = _manual_rsi(df["close"], rsi_p)
         df["ema_fast"]   = _manual_ema(df["close"], ema_fast)
