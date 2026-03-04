@@ -1,7 +1,7 @@
 """
 Birdeye API を使って Solana 上のトークンデータと OHLCV を取得する。
+価格取得は data.dexscreener モジュールを使用（Birdeye API を節約）。
 """
-import asyncio
 import time
 import logging
 from typing import Optional
@@ -113,47 +113,3 @@ async def fetch_ohlcv(
         return []
 
 
-async def fetch_price(
-    session: aiohttp.ClientSession,
-    address: str,
-) -> Optional[float]:
-    """現在価格を取得する。"""
-    url = f"{BASE_URL}/defi/price"
-    params = {"address": address}
-    try:
-        async with session.get(url, headers=_headers(), params=params) as resp:
-            resp.raise_for_status()
-            data = await resp.json()
-            return data.get("data", {}).get("value")
-    except Exception as e:
-        logger.error(f"fetch_price({address}) error: {e}")
-        return None
-
-
-async def fetch_multi_prices(
-    session: aiohttp.ClientSession,
-    addresses: list[str],
-) -> dict[str, float]:
-    """複数トークンの現在価格を一括取得する。失敗時は個別取得にフォールバック。"""
-    if not addresses:
-        return {}
-    url = f"{BASE_URL}/defi/multi_price"
-    params = {"list_address": ",".join(addresses)}
-    try:
-        async with session.get(url, headers=_headers(), params=params) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-                raw = data.get("data", {})
-                return {addr: info.get("value", 0.0) for addr, info in raw.items()}
-            body = await resp.text()
-            logger.warning(f"fetch_multi_prices {resp.status}: {body}. 個別取得にフォールバック。")
-    except Exception as e:
-        logger.warning(f"fetch_multi_prices error: {e}. 個別取得にフォールバック。")
-
-    # フォールバック: 個別に価格取得
-    results = {}
-    for addr in addresses:
-        price = await fetch_price(session, addr)
-        if price is not None:
-            results[addr] = price
-    return results

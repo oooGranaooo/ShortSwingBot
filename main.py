@@ -17,7 +17,8 @@ from copy import deepcopy
 import aiohttp
 
 from config.settings import LOOP_INTERVAL, TIMEFRAME
-from data.fetcher import fetch_ohlcv, fetch_multi_prices
+from data.fetcher import fetch_ohlcv
+from data.dexscreener import fetch_prices as fetch_multi_prices
 from data.ohlcv import to_dataframe
 from execution.paper_trader import PaperTrader
 from ml.features import build_feature_matrix, cache_entry_indicators
