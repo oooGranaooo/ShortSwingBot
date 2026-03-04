@@ -47,7 +47,7 @@ async def screen_tokens(
     raw_tokens = await fetch_token_list(
         session,
         sort_by="v24hUSD",
-        limit=100,
+        limit=50,
     )
     if not raw_tokens:
         logger.warning("スクリーニング: トークンリスト取得失敗")
