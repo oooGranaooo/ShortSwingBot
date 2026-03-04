@@ -46,7 +46,7 @@ async def screen_tokens(
     # --- 1. トークンリストを大量取得 ---
     raw_tokens = await fetch_token_list(
         session,
-        sort_by="v24hChangePercent",
+        sort_by="v24hUSD",
         limit=100,
     )
     if not raw_tokens:
