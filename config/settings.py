@@ -18,10 +18,9 @@ LOOP_INTERVAL = 300  # 5 min
 PARAMS = {
     # Screener
     "min_market_cap": 100_000,       # $100K 最低時価総額
-    "max_market_cap": 50_000_000,    # $50M 最大時価総額
-    "min_listing_hours": 24,         # 上場から最低24時間
+    "max_market_cap": 500_000_000,   # $500M 最大時価総額
     "top_n_candidates": 20,          # スクリーニング候補数
-    "min_1h_change": 0.05,           # 1時間変化率の最低値 (5%)
+    "min_24h_change": 0.0,           # 24時間変化率の最低値 (0% = プラスのみ通過)
     "weight_price_change": 0.4,      # スクリーニングスコア重み
     "weight_volume": 0.3,
     "weight_mc": 0.3,

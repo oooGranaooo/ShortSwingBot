@@ -1,15 +1,13 @@
 """
 Birdeye のトークンリストからトレード候補をスクリーニングする。
 スコアリング基準:
-  - 1時間価格変動率  (weight_price_change)
+  - 24時間価格変動率 (weight_price_change)
   - 24時間出来高     (weight_volume)
   - 時価総額         (weight_mc)
 フィルタリング基準:
   - 時価総額が min_market_cap 〜 max_market_cap の範囲内
-  - 上場からの経過時間が min_listing_hours 以上
-  - 1時間変化率が min_1h_change 以上
+  - 24時間変化率が min_24h_change 以上
 """
-import time
 import logging
 from typing import Optional
 
@@ -41,7 +39,6 @@ async def screen_tokens(
              "listing_time", "score"}
     """
     p = params or PARAMS
-    now = time.time()
 
     # --- 1. トークンリストを大量取得 ---
     raw_tokens = await fetch_token_list(
@@ -64,11 +61,8 @@ async def screen_tokens(
             continue
         if mc > p["max_market_cap"]:
             continue
-        if change24h < p["min_1h_change"] * 100:  # API は % 表記
+        if change24h < p["min_24h_change"] * 100:  # API は % 表記
             continue
-
-        # 上場時刻フィルター (lastTradeUnixTime で代用)
-        listing_time = token.get("lastTradeUnixTime", 0) or 0
 
         candidates.append({
             "address": token.get("address", ""),
@@ -78,7 +72,6 @@ async def screen_tokens(
             "mc": mc,
             "v24h": v24h,
             "change1h": change24h,
-            "listing_time": listing_time,
         })
 
     if not candidates:
