@@ -110,6 +110,7 @@ async def _main_cycle(
     token_data: dict[str, dict] = {}
     for token in candidates:
         addr = token["address"]
+        await asyncio.sleep(1.0)  # Birdeye 無料プランのレートリミット対策
         items = await fetch_ohlcv(session, addr, TIMEFRAME)
         raw_df = to_dataframe(items)
         if raw_df.empty:
