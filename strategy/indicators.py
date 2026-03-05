@@ -95,12 +95,25 @@ def add_indicators(df: pd.DataFrame, params: dict) -> pd.DataFrame:
                 rename_map[col] = "atr"
         df.rename(columns=rename_map, inplace=True)
 
-        # pandas-ta が BBands の生成に失敗した場合は手動計算にフォールバック
+        # pandas-ta が失敗した列を手動計算でフォールバック
+        if "rsi" not in df.columns:
+            df["rsi"] = _manual_rsi(df["close"], rsi_p)
+
         if "bb_lower" not in df.columns:
             rolling = df["close"].rolling(bb_p)
             df["bb_mid"]   = rolling.mean()
             df["bb_upper"] = df["bb_mid"] + bb_std * rolling.std(ddof=0)
             df["bb_lower"] = df["bb_mid"] - bb_std * rolling.std(ddof=0)
+
+        if "macd_hist" not in df.columns:
+            _ema_f = _manual_ema(df["close"], macd_f)
+            _ema_s = _manual_ema(df["close"], macd_s)
+            df["macd"]        = _ema_f - _ema_s
+            df["macd_signal"] = _manual_ema(df["macd"], macd_sig)
+            df["macd_hist"]   = df["macd"] - df["macd_signal"]
+
+        if "atr" not in df.columns:
+            df["atr"] = _manual_atr(df, atr_p)
     else:
         df["rsi"]        = _manual_rsi(df["close"], rsi_p)
         df["ema_fast"]   = _manual_ema(df["close"], ema_fast)

@@ -178,7 +178,8 @@ async def _main_cycle(
 
         # 1 つ前の足を prev として渡す
         prev_ind = None
-        valid = df.dropna(subset=["macd_hist"])
+        subset = [c for c in ["macd_hist"] if c in df.columns]
+        valid = df.dropna(subset=subset) if subset else df
         if len(valid) >= 2:
             prev_ind = valid.iloc[-2]
 
