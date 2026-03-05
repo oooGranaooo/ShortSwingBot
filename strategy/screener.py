@@ -61,7 +61,8 @@ async def screen_tokens(
             continue
         if mc > p["max_market_cap"]:
             continue
-        if change24h < p["min_24h_change"] * 100:  # API は % 表記
+        min_change = p.get("min_24h_change", p.get("min_1h_change", 0.0))
+        if change24h < min_change * 100:  # API は % 表記
             continue
 
         candidates.append({
