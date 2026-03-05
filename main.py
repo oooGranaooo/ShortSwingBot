@@ -56,7 +56,8 @@ async def run():
     last_ml_optimize = 0.0
     ml_interval_sec = params["ml_retrain_interval_hours"] * 3600
 
-    async with aiohttp.ClientSession() as session:
+    timeout = aiohttp.ClientTimeout(total=30)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         while True:
             loop_start = time.time()
             try:
@@ -65,7 +66,10 @@ async def run():
                 )
             except Exception as e:
                 logger.error(f"メインサイクルエラー: {e}", exc_info=True)
-                notify_error(str(e))
+                try:
+                    notify_error(str(e))
+                except Exception:
+                    pass
 
             # --- ML 定期再学習 ---
             if time.time() - last_ml_train > ml_interval_sec:
@@ -90,7 +94,10 @@ async def run():
             elapsed = time.time() - loop_start
             sleep_sec = max(0, LOOP_INTERVAL - elapsed)
             logger.info(f"次のサイクルまで {sleep_sec:.0f}s 待機")
-            await asyncio.sleep(sleep_sec)
+            try:
+                await asyncio.sleep(sleep_sec)
+            except asyncio.CancelledError:
+                logger.info("スリープがキャンセルされました。ループを継続します。")
 
 
 async def _main_cycle(
@@ -219,4 +226,9 @@ async def _retrain_ml(trader: PaperTrader, classifier: EntryClassifier):
 
 
 if __name__ == "__main__":
-    asyncio.run(run())
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        logger.info("Bot を停止しました。")
+    except Exception as e:
+        logger.critical(f"致命的エラーで停止: {e}", exc_info=True)
