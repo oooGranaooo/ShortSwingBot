@@ -69,16 +69,22 @@ async def run():
 
             # --- ML 定期再学習 ---
             if time.time() - last_ml_train > ml_interval_sec:
-                await _retrain_ml(trader, classifier)
+                try:
+                    await _retrain_ml(trader, classifier)
+                except Exception as e:
+                    logger.error(f"ML再学習エラー: {e}", exc_info=True)
                 last_ml_train = time.time()
 
             # --- Optuna 定期最適化 (ML 再学習の 2 倍間隔) ---
             if time.time() - last_ml_optimize > ml_interval_sec * 2:
                 if ohlcv_history:
-                    logger.info("Optuna パラメーター最適化を開始...")
-                    params = optimize(ohlcv_history, params)
-                    trader.params = params
-                    notify_ml_update(params)
+                    try:
+                        logger.info("Optuna パラメーター最適化を開始...")
+                        params = optimize(ohlcv_history, params)
+                        trader.params = params
+                        notify_ml_update(params)
+                    except Exception as e:
+                        logger.error(f"Optuna最適化エラー: {e}", exc_info=True)
                 last_ml_optimize = time.time()
 
             elapsed = time.time() - loop_start
