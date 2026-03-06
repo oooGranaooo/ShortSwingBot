@@ -104,12 +104,18 @@ async def fetch_ohlcv(
     }
     try:
         async with session.get(url, headers=_headers(), params=params) as resp:
-            resp.raise_for_status()
+            if resp.status == 400:
+                logger.warning(f"fetch_ohlcv({address[:8]}...): OHLCVデータなし (400)")
+                return []
+            if resp.status != 200:
+                body = await resp.text()
+                logger.error(f"fetch_ohlcv({address[:8]}...) error: {resp.status} {body}")
+                return []
             data = await resp.json()
             items = data.get("data", {}).get("items", [])
             return items
     except Exception as e:
-        logger.error(f"fetch_ohlcv({address}) error: {e}")
+        logger.error(f"fetch_ohlcv({address[:8]}...) error: {e}")
         return []
 
 
