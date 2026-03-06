@@ -105,7 +105,8 @@ async def fetch_ohlcv(
     try:
         async with session.get(url, headers=_headers(), params=params) as resp:
             if resp.status == 400:
-                logger.warning(f"fetch_ohlcv({address[:8]}...): OHLCVデータなし (400)")
+                body = await resp.text()
+                logger.warning(f"fetch_ohlcv({address[:8]}...) 400: {body}")
                 return []
             if resp.status != 200:
                 body = await resp.text()
