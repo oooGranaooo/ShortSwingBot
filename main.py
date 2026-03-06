@@ -50,6 +50,8 @@ async def run():
 
     # 履歴 OHLCV キャッシュ (Optuna 用)
     ohlcv_history: dict[str, object] = {}
+    # OHLCV の最終取得時刻 (Birdeye CU 節約のためキャッシュ制御に使用)
+    ohlcv_fetch_times: dict[str, float] = {}
 
     # ML / Optuna の最終実行時刻
     last_ml_train   = 0.0
@@ -62,7 +64,8 @@ async def run():
             loop_start = time.time()
             try:
                 await _main_cycle(
-                    session, params, trader, classifier, ohlcv_history
+                    session, params, trader, classifier,
+                    ohlcv_history, ohlcv_fetch_times,
                 )
             except Exception as e:
                 logger.error(f"メインサイクルエラー: {e}", exc_info=True)
@@ -106,6 +109,7 @@ async def _main_cycle(
     trader: PaperTrader,
     classifier: EntryClassifier,
     ohlcv_history: dict,
+    ohlcv_fetch_times: dict,
 ):
     # --- 1. スクリーニング ---
     candidates = await screen_tokens(session, params)
@@ -114,12 +118,24 @@ async def _main_cycle(
         return
 
     # --- 2. OHLCV 取得 + 指標計算 ---
+    from config.settings import TIMEFRAME_SECONDS
+    tf_sec = TIMEFRAME_SECONDS.get(TIMEFRAME, 900)
+
     token_data: dict[str, dict] = {}
     for token in candidates:
         addr = token["address"]
-        await asyncio.sleep(1.0)  # Birdeye 無料プランのレートリミット対策
-        items = await fetch_ohlcv(session, addr, TIMEFRAME)
-        raw_df = to_dataframe(items)
+        now = time.time()
+
+        # キャッシュが新鮮（1タイムフレーム以内）なら再取得しない
+        if addr in ohlcv_history and now - ohlcv_fetch_times.get(addr, 0) < tf_sec:
+            raw_df = ohlcv_history[addr]
+        else:
+            await asyncio.sleep(1.0)  # Birdeye 無料プランのレートリミット対策
+            items = await fetch_ohlcv(session, addr, TIMEFRAME)
+            raw_df = to_dataframe(items)
+            if not raw_df.empty:
+                ohlcv_fetch_times[addr] = now
+
         if raw_df.empty:
             continue
         df = add_indicators(raw_df, params)
